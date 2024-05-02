@@ -1,0 +1,16 @@
+{
+  "name": "youtube-api-project",
+  "version": "1.0.0",
+  "description": "",
+  "main": "user-demo.js",
+  "scripts": {
+    "start": "nodemon app.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.19.2",
+    "nodemon": "^3.1.0"
+  }
+}
