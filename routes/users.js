@@ -2,6 +2,8 @@
 const express = require("express");
 const router = express.Router();
 
+const conn = require('../mariadb');
+
 router.use(express.json()); // http 외 모듈 'JOSN' 사용
 
 let db = new Map();
@@ -62,19 +64,21 @@ router.post("/join", (req, res) => {
 // 회원 개별 조회
 router.get("/users", (req, res) => {
   console.log(db);
-  let {id} = req.body;
-  const user = db.get(id);
+  let {userEmail} = req.body;
 
-  if (user) {
-    res.status(200).json({
-      objectId : user.id,
-      objectName : user.name
-    })
-  } else {
-    res.status(404).json({
-      message : "회원 정보가 존재하지 않습니다."
-    })
-  }
+  conn.query(
+    `SELECT * FROM users WHERE user_email = ?`, userEmail, 
+    function (err, results, fiedls) {
+      if (results.length) {
+        res.status(200).json(results);
+        console.log(results);
+      } else {
+        res.status(404).json({
+          message : `입력한 회원이 존재하지 않습니다.`
+        });
+      }
+    }
+  ); 
 });
 
 // 회원 개별 탈퇴
