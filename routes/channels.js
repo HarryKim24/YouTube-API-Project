@@ -10,26 +10,24 @@ var objectId = 1;
 router
   .route('/')
   .get((req, res) => { // 채널 전체 조회
-    var {id} = req.body;
-    var youtubeChannels = [];
+    var {user_id} = req.body;
+    let SQL = `SELECT * FROM channels WHERE user_id = ?`;
 
-    if (db.size && id) {
-      db.forEach(objectChannel => {
-        if (objectChannel.id === id) 
-          youtubeChannels.push(objectChannel);
-      })
-      
-      if (youtubeChannels.length) {
-        res.status(200).json(youtubeChannels);
-      } else {
-        notFoundChannelError();
-      }
+    if (user_id) {
+      conn.query(SQL, user_id, 
+        function (err, results) {
+          if (results.length) {
+            res.status(200).json(results);
+          } else {
+            notFoundChannelError(res);
+          }
+        }
+      ); 
     } else {
-      notFoundChannelError();
+      res.status(404).end();
     }
   })
   .post((req, res) => { // 채널 개별 생성
-
     if (req.body.channelTitle) {
 
       db.set(objectId++, req.body);
