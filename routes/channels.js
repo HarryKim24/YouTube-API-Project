@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express.Router();
+const conn = require('../mariadb');
 
 router.use(express.json());
 
@@ -9,8 +10,6 @@ var objectId = 1;
 router
   .route('/')
   .get((req, res) => { // 채널 전체 조회
-    console.log(db);
-
     var {id} = req.body;
     var youtubeChannels = [];
 
@@ -49,16 +48,20 @@ router
 router
   .route('/:id')
   .get((req, res) => { // 채널 개별 조회
-    console.log(db);
     let {id} = req.params;
     id = parseInt(id);
-    var dbChannel = db.get(id);
 
-    if (dbChannel) {
-      res.status(200).json(db.get(id));
-    } else {
-      notFoundChannelError();
-    }
+    let SQL = `SELECT * FROM channels WHERE id = ?`;
+
+    conn.query(SQL, id, 
+      function (err, results) {
+        if (results.length) {
+          res.status(200).json(results);
+        } else {
+          notFoundChannelError(res);
+        }
+      }
+    ); 
   })
   .put((req, res) => { // 채널 개별 수정
     let {id} = req.params;
@@ -97,7 +100,7 @@ router
     }
   }) 
 
-function notFoundChannelError() {
+function notFoundChannelError(res) {
   res.status(404).json({
     message : '채널을 찾지 못했습니다.'
   })
