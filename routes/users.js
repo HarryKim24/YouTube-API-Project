@@ -46,35 +46,40 @@ router.post("/login", (req, res) => {
 
 // 회원 가입 기능
 router.post("/join", (req, res) => {
+
   if (req.body == {}) {
     res.status(400).json({
       message : `회원 정보를 다시 입력해주세요.`,
     });
   } else {
-    const {id} = req.body;
-    db.set(id, req.body);
-    console.log(db);
+    const {user_email, user_name, user_password, user_contact} = req.body;
 
-    res.status(201).json({
-      message : `${db.get(id).name}님 반갑습니다!`
-    });
+    conn.query(
+      `INSERT INTO users (user_email, user_name, user_password, user_contact)
+        VALUES (?, ?, ?, ?)`, [user_email, user_name, user_password, user_contact], 
+      function (err, results, fiedls) {
+        res.status(201).json({
+          message : '회원가입이 완료되었습니다!'
+        });
+      }
+    ); 
   }
 });
 
 // 회원 개별 조회
 router.get("/users", (req, res) => {
-  console.log(db);
-  let {userEmail} = req.body;
+
+  let {user_email} = req.body;
 
   conn.query(
-    `SELECT * FROM users WHERE user_email = ?`, userEmail, 
+    `SELECT * FROM users WHERE user_email = ?`, user_email, 
     function (err, results, fiedls) {
       if (results.length) {
         res.status(200).json(results);
         console.log(results);
       } else {
         res.status(404).json({
-          message : `입력한 회원이 존재하지 않습니다.`
+          message : `해당 계정이 존재하지 않습니다.`
         });
       }
     }
