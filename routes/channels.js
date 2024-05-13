@@ -59,6 +59,7 @@ router
       function (err, results) {
         if (err) {
           console.log(err);
+        
           res.status(400).end();
         }
         res.status(201).json(results);
@@ -89,7 +90,7 @@ router
           console.log(err);
           res.status(400).end();
         }
-        
+
         if (results.length) {
           res.status(200).json(results);
         } else {
@@ -98,25 +99,41 @@ router
       }
     ); 
   })
-  .put((req, res) => { // 채널 개별 수정
+  .put(
+    [
+      param('id').notEmpty().withMessage('채널 id를 입력해주세요'),
+      body('channel_name').notEmpty().isString().withMessage('채널명을 다시 입력해주세요')
+    ],
+    (req, res) => { // 채널 개별 수정
+
+    const err = validationResult(req);
+    
+    if (!err.isEmpty()) {
+      return res.status(400).json(err.array());
+    }
+
     let {id} = req.params;
     id = parseInt(id);
+    let {channel_name} = req.body;
 
-    var dbchannel = db.get(id);
-    var oldChannelTitle = dbchannel.channelTitle;
+    let SQL = `UPDATE channels SET channel_name=? WHERE id=?`;
+    let values = [channel_name, id];
 
-    if (dbchannel) {
-      var newChannelTitle = req.body.channelTitle;
-      dbchannel.channelTitle = newChannelTitle;
-      db.set(id, dbchannel);
-      console.log(db);
+    conn.query(SQL, values, 
+      function (err, results) {
+        if (err) {
+          console.log(err);
+          res.status(400).end();
+        }
 
-      res.status(200).json({
-        message : `채널명이 ${oldChannelTitle}에서 ${newChannelTitle}로 변경되었습니다.`
-      })
-    } else {
-      notFoundChannelError();
-    }
+        if (results.affectedRows == 0) {
+          return res.status(400).end();
+        } else {
+          res.status(200).json(results);
+        }
+
+      }
+    ); 
   }) 
   .delete((req, res) => { // 채널 개별 삭제
     console.log(db);
