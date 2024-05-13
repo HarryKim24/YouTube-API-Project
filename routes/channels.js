@@ -116,7 +116,7 @@ router
     id = parseInt(id);
     let {channel_name} = req.body;
 
-    let SQL = `UPDATE channels SET channel_name=? WHERE id=?`;
+    let SQL = `UPDATE channels SET channel_name=? WHERE id = ?`;
     let values = [channel_name, id];
 
     conn.query(SQL, values, 
@@ -135,21 +135,35 @@ router
       }
     ); 
   }) 
-  .delete((req, res) => { // 채널 개별 삭제
-    console.log(db);
+  .delete(
+    param('id').notEmpty().withMessage('채널 id를 입력해주세요'),
+    (req, res) => { // 채널 개별 삭제
+    
+    const err = validationResult(req);
+    
+    if (!err.isEmpty()) {
+      return res.status(400).json(err.array());
+    }
+
     let {id} = req.params;
     id = parseInt(id);
-    var dbChannel = db.get(id);
 
-    if (dbChannel) {
-      db.delete(id);
-      console.log(db);
-      res.status(200).json({
-        message : `${dbChannel.channelTitle} 채널이 삭제되었습니다.`
-      });
-    } else {
-      notFoundChannelError();
-    }
+    let SQL = `DELETE FROM channels WHERE id = ?`;
+
+    conn.query(SQL, id,
+      function(err, results) {
+        if (err) {
+          console.log(err);
+          res.status(400).end();
+        }
+
+        if (results.affectedRows == 0) {
+          return res.status(400).end();
+        } else {
+          res.status(200).json(results);
+        }
+      }
+    );
   }) 
 
 function notFoundChannelError(res) {
