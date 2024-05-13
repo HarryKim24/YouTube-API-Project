@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const conn = require('../mariadb');
+const {body, param,  validationResult} = require('express-validator');
 
 router.use(express.json());
 
@@ -9,43 +10,74 @@ var objectId = 1;
 
 router
   .route('/')
-  .get((req, res) => { // 채널 전체 조회
+  .get(
+    body('user_id').notEmpty().isInt().withMessage('user_id는 숫자로 입력해주세요.'),
+    (req, res) => { // 채널 전체 조회
+
+    const err = validationResult(req);
+    
+    if (!err.isEmpty()) {
+      return res.status(400).json(err.array());
+    }
+
     var {user_id} = req.body;
     let SQL = `SELECT * FROM channels WHERE user_id = ?`;
 
-    if (user_id) {
-      conn.query(SQL, user_id, 
-        function (err, results) {
-          if (results.length) {
-            res.status(200).json(results);
-          } else {
-            notFoundChannelError(res);
-          }
+    conn.query(SQL, user_id, 
+      function (err, results) {
+        if (err) {
+          console.log(err);
+          return res.status(400).end();
         }
-      ); 
-    } else {
-      res.status(404).end();
-    }
+
+        if (results.length) {
+          res.status(200).json(results);
+        } else {
+          notFoundChannelError(res);
+        }
+      }
+    ); 
   })
-  .post((req, res) => { // 채널 개별 생성
-    if (req.body.channelTitle) {
+  .post(
+    [
+      body('user_id').notEmpty().isInt().withMessage('user_id는 숫자로 입력해주세요.'),
+      body('channel_name').notEmpty().isString().withMessage('channel_name은 문자로 입력해주세요.')
+    ], 
+    (req, res) => { // 채널 개별 생성
+      const err = validationResult(req);
 
-      db.set(objectId++, req.body);
-      console.log(db);
+      if (!err.isEmpty()) {
+        return res.status(400).json(err.array());
+      }
 
-      res.status(201).json({
-        message : `${db.get(objectId - 1).channelTitle} 채널이 생성되었습니다!`
-      })
-    } else {
-      res.status(400).json({
-        message : '채널 정보를 다시 입력해주세요.'
-      })
-    }
+    const {channel_name, user_id} = req.body;
+
+    let SQL = `INSERT INTO channels (channel_name, user_id) VALUES (?, ?)`;
+    let values = [channel_name, user_id];
+
+    conn.query(SQL, values, 
+      function (err, results) {
+        if (err) {
+          console.log(err);
+          res.status(400).end();
+        }
+        res.status(201).json(results);
+      }
+    ); 
   })
 
 router
   .route('/:id')
-  .get((req, res) => { // 채널 개별 조회
+  .get(
+    param('id').notEmpty().withMessage('채널 id를 입력해주세요'),
+    (req, res) => { // 채널 개별 조회
+
+    const err = validationResult(req);
+    
+    if (!err.isEmpty()) {
+      return res.status(400).json(err.array());
+    }
+
     let {id} = req.params;
     id = parseInt(id);
 
@@ -53,6 +85,11 @@ router
 
     conn.query(SQL, id, 
       function (err, results) {
+        if (err) {
+          console.log(err);
+          res.status(400).end();
+        }
+        
         if (results.length) {
           res.status(200).json(results);
         } else {
