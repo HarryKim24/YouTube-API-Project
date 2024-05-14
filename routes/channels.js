@@ -5,20 +5,24 @@ const {body, param,  validationResult} = require('express-validator');
 
 router.use(express.json());
 
-let db = new Map();
-var objectId = 1;
+const validate =  (req, res, next) => {
+  const err = validationResult(req);
+    
+  if (err.isEmpty()) {
+    return next();
+  } else {
+    return res.status(400).json(err.array());
+  }
+}
 
 router
   .route('/')
   .get(
-    body('user_id').notEmpty().isInt().withMessage('user_id는 숫자로 입력해주세요.'),
+    [
+      body('user_id').notEmpty().isInt().withMessage('user_id는 숫자로 입력해주세요.'),
+      validate
+    ],
     (req, res) => { // 채널 전체 조회
-
-    const err = validationResult(req);
-    
-    if (!err.isEmpty()) {
-      return res.status(400).json(err.array());
-    }
 
     var {user_id} = req.body;
     let SQL = `SELECT * FROM channels WHERE user_id = ?`;
@@ -33,7 +37,7 @@ router
         if (results.length) {
           res.status(200).json(results);
         } else {
-          notFoundChannelError(res);
+          return res.status(404).end();
         }
       }
     ); 
@@ -41,17 +45,12 @@ router
   .post(
     [
       body('user_id').notEmpty().isInt().withMessage('user_id는 숫자로 입력해주세요.'),
-      body('channel_name').notEmpty().isString().withMessage('channel_name은 문자로 입력해주세요.')
+      body('channel_name').notEmpty().isString().withMessage('channel_name은 문자로 입력해주세요.'),
+      validate
     ], 
     (req, res) => { // 채널 개별 생성
-      const err = validationResult(req);
-
-      if (!err.isEmpty()) {
-        return res.status(400).json(err.array());
-      }
 
     const {channel_name, user_id} = req.body;
-
     let SQL = `INSERT INTO channels (channel_name, user_id) VALUES (?, ?)`;
     let values = [channel_name, user_id];
 
@@ -70,18 +69,14 @@ router
 router
   .route('/:id')
   .get(
-    param('id').notEmpty().withMessage('채널 id를 입력해주세요'),
+    [
+      param('id').notEmpty().withMessage('채널 id를 입력해주세요'),
+      validate
+    ],
     (req, res) => { // 채널 개별 조회
-
-    const err = validationResult(req);
-    
-    if (!err.isEmpty()) {
-      return res.status(400).json(err.array());
-    }
 
     let {id} = req.params;
     id = parseInt(id);
-
     let SQL = `SELECT * FROM channels WHERE id = ?`;
 
     conn.query(SQL, id, 
@@ -94,7 +89,7 @@ router
         if (results.length) {
           res.status(200).json(results);
         } else {
-          notFoundChannelError(res);
+          return res.status(404).end();
         }
       }
     ); 
@@ -102,15 +97,10 @@ router
   .put(
     [
       param('id').notEmpty().withMessage('채널 id를 입력해주세요'),
-      body('channel_name').notEmpty().isString().withMessage('채널명을 다시 입력해주세요')
+      body('channel_name').notEmpty().isString().withMessage('채널명을 다시 입력해주세요'),
+      validate
     ],
     (req, res) => { // 채널 개별 수정
-
-    const err = validationResult(req);
-    
-    if (!err.isEmpty()) {
-      return res.status(400).json(err.array());
-    }
 
     let {id} = req.params;
     id = parseInt(id);
@@ -136,14 +126,11 @@ router
     ); 
   }) 
   .delete(
-    param('id').notEmpty().withMessage('채널 id를 입력해주세요'),
+    [
+      param('id').notEmpty().withMessage('채널 id를 입력해주세요'),
+      validate
+    ],
     (req, res) => { // 채널 개별 삭제
-    
-    const err = validationResult(req);
-    
-    if (!err.isEmpty()) {
-      return res.status(400).json(err.array());
-    }
 
     let {id} = req.params;
     id = parseInt(id);
@@ -165,11 +152,5 @@ router
       }
     );
   }) 
-
-function notFoundChannelError(res) {
-  res.status(404).json({
-    message : '채널을 찾지 못했습니다.'
-  })
-}
 
 module.exports = router
